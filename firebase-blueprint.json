@@ -1,0 +1,64 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile information synchronized from Firebase Auth",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "The unique Firebase Auth user ID" },
+        "email": { "type": "string", "description": "User primary email address" },
+        "displayName": { "type": "string", "description": "User display name" },
+        "photoURL": { "type": "string", "description": "User avatar picture URL" },
+        "lastLogin": { "type": "string", "description": "ISO timestamp of the last active login" }
+      },
+      "required": ["userId", "email"]
+    },
+    "CustomSignal": {
+      "title": "CustomSignal",
+      "description": "Custom political intelligence alerts and signal inputs created by authenticated analysts",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique signal ID" },
+        "title": { "type": "string", "description": "Brief headline description of the political hazard or event" },
+        "details": { "type": "string", "description": "In-depth investigative details and sources" },
+        "type": { "type": "string", "description": "Sector category of the threat signal" },
+        "severity": { "type": "string", "enum": ["CRITICAL", "HIGH", "MEDIUM", "LOW"], "description": "System severity classification" },
+        "category": { "type": "string", "enum": ["Positive", "Negative", "Neutral"], "description": "Categorical bias direction" },
+        "impact": { "type": "number", "description": "Estimated impact hazard coefficient" },
+        "aiConfidence": { "type": "number", "description": "Confidence certainty percentage" },
+        "createdAt": { "type": "string", "description": "Creation server timestamp" },
+        "authorId": { "type": "string", "description": "Author user ID tracker" },
+        "authorEmail": { "type": "string", "description": "Author user email tracker" }
+      },
+      "required": ["id", "title", "details", "type", "severity", "category", "impact", "aiConfidence", "createdAt", "authorId"]
+    },
+    "UserChatMessage": {
+      "title": "UserChatMessage",
+      "description": "Historical chat conversation lines for persistent assistant sessions",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Message unique node ID" },
+        "text": { "type": "string", "description": "Text payload of the inquiry or response" },
+        "sender": { "type": "string", "enum": ["user", "ai"], "description": "Message origin authority" },
+        "time": { "type": "string", "description": "Formatted local standard time string" },
+        "timestamp": { "type": "string", "description": "Operational ordering timestamp record" },
+        "userId": { "type": "string", "description": "Associated user track identifier" }
+      },
+      "required": ["id", "text", "sender", "time", "timestamp", "userId"]
+    }
+  },
+  "firestore": {
+    "/userProfiles/{userId}": {
+      "schema": "UserProfile",
+      "description": "Access log registry containing authorized user system mappings"
+    },
+    "/customSignals/{signalId}": {
+      "schema": "CustomSignal",
+      "description": "Electoral event files captured by certified analyst nodes"
+    },
+    "/chatHistory/{messageId}": {
+      "schema": "UserChatMessage",
+      "description": "Conversation streams mapped by authorizing analyst users"
+    }
+  }
+}

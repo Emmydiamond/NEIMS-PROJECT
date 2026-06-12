@@ -1,0 +1,6 @@
+{
+  "name": "National Election Intelligence Monitoring System",
+  "description": "Real-time political forecasting powered by AI-driven event analysis and sentiment monitoring across all 36 states and the FCT.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

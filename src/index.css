@@ -1,0 +1,31 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap");
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+/* Custom Scrollbars for terminal feed aesthetic */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #040812;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #152445;
+  border-radius: 999px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #1e3465;
+}
+
+/* Dark mode ambient overlay gradient */
+.overlay-gradient {
+  background: linear-gradient(135deg, rgba(9,14,26,0.95) 0%, rgba(5,10,20,0.98) 100%);
+}

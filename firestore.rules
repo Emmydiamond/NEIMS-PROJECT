@@ -1,0 +1,113 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global Safety Net default catch-all: DENY ALL
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- REUSABLE SECURITY UTILITIES ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // --- PILLARS OF HARDENED VALIDATION ---
+
+    function isValidUserProfile(data) {
+      return data.keys().hasAll(['userId', 'email', 'displayName', 'photoURL', 'lastLogin']) 
+        && data.keys().size() == 5
+        && data.userId is string && data.userId.size() <= 128
+        && data.email is string && data.email.size() <= 200
+        && data.displayName is string && data.displayName.size() <= 200
+        && data.photoURL is string && data.photoURL.size() <= 2000
+        && data.lastLogin is string && data.lastLogin.size() <= 100;
+    }
+
+    function isValidCustomSignal(data) {
+      return data.keys().hasAll(['id', 'title', 'details', 'type', 'severity', 'category', 'impact', 'aiConfidence', 'createdAt', 'authorId', 'authorEmail']) 
+        && data.keys().size() == 11
+        && data.id is string && data.id.size() <= 128
+        && data.title is string && data.title.size() <= 250
+        && data.details is string && data.details.size() <= 10000
+        && data.type is string && data.type.size() <= 100
+        && data.severity is string && (data.severity == 'CRITICAL' || data.severity == 'HIGH' || data.severity == 'MEDIUM' || data.severity == 'LOW')
+        && data.category is string && (data.category == 'Positive' || data.category == 'Negative' || data.category == 'Neutral')
+        && (data.impact is int || data.impact is float) && data.impact >= 0 && data.impact <= 100
+        && (data.aiConfidence is int || data.aiConfidence is float) && data.aiConfidence >= 0 && data.aiConfidence <= 100
+        && data.createdAt is timestamp
+        && data.authorId is string && data.authorId == request.auth.uid
+        && data.authorEmail is string && data.authorEmail.size() <= 200;
+    }
+
+    function isValidUserChatMessage(data) {
+      return data.keys().hasAll(['id', 'text', 'sender', 'time', 'timestamp', 'userId']) 
+        && data.keys().size() == 6
+        && data.id is string && data.id.size() <= 128
+        && data.text is string && data.text.size() <= 10000
+        && data.sender is string && (data.sender == 'user' || data.sender == 'ai')
+        && data.time is string && data.time.size() <= 50
+        && data.timestamp is timestamp
+        && data.userId is string && data.userId == request.auth.uid;
+    }
+
+    // --- ENTITY PATH RULESETS ---
+
+    // 1. User Profile Collection Rules
+    match /userProfiles/{userId} {
+      allow get: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidUserProfile(request.resource.data);
+      allow update: if isOwner(userId) && isValidUserProfile(request.resource.data)
+                    && request.resource.data.userId == resource.data.userId
+                    && request.resource.data.email == resource.data.email;
+      allow delete: if false; // Profiles are permanent audit records
+    }
+
+    // 2. Custom Intelligence Signals Rules
+    match /customSignals/{signalId} {
+      // Anyone with the link can view/read electoral threat intelligence alerts (public access)
+      allow get, list: if true;
+      
+      allow create: if isSignedIn() 
+                    && isValidId(signalId)
+                    && isValidCustomSignal(request.resource.data)
+                    && request.resource.data.createdAt == request.time;
+                    
+      allow update: if isSignedIn()
+                    && isValidId(signalId)
+                    && isValidCustomSignal(request.resource.data)
+                    && request.resource.data.id == resource.data.id
+                    && request.resource.data.authorId == resource.data.authorId
+                    && request.resource.data.createdAt == resource.data.createdAt;
+                    
+      allow delete: if isSignedIn()
+                    && resource.data.authorId == request.auth.uid;
+    }
+
+    // 3. Persistent User Chat History Logs
+    match /chatHistory/{messageId} {
+      // Must enforce matching queries so users can't scrape other discussions
+      allow get, list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      
+      allow create: if isSignedIn()
+                    && isValidId(messageId)
+                    && isValidUserChatMessage(request.resource.data)
+                    && request.resource.data.timestamp == request.time;
+                    
+      allow update, delete: if false; // Conversations lines are permanent append-only audit logs
+    }
+
+    // 4. Basic Core Connection Test Path (publicly readable for health checks)
+    match /test/connection {
+      allow read: if true;
+    }
+  }
+}
